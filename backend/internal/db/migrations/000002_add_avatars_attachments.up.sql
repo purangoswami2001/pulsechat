@@ -1,0 +1,4 @@
+-- Add avatar support for users and attachment support for messages
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT '' NOT NULL;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_url TEXT DEFAULT '' NOT NULL;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS attachment_type TEXT DEFAULT '' NOT NULL;

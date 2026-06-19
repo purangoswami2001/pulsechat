@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Database Service
+  postgres:
+    image: postgres:15-alpine
+    container_name: pulsechat-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pulsechat
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pulsechat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # In-Memory Cache & Pub/Sub
+  redis:
+    image: redis:7-alpine
+    container_name: pulsechat-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Go Backend REST & WebSocket Server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pulsechat-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      ENV: "production"
+      DB_DSN: "postgres://postgres:postgres@postgres:5432/pulsechat?sslmode=disable"
+      REDIS_URL: "redis://redis:6379/0"
+      PUBSUB_DRIVER: "redis"
+      JWT_SECRET: "super_secret_jwt_key_should_be_long_and_random"
+      JWT_EXPIRATION_HOURS: "24"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # React Static Server via Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pulsechat-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

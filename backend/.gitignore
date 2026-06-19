@@ -1,0 +1,27 @@
+# Compiled binaries and executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+pulsechat
+pulsechat-server
+pulsechat_new
+bin/
+
+# Environment configurations
+.env
+
+# Logs
+logs/*
+!logs/.gitkeep
+*.log
+
+# Uploads (ignore all contents, but keep the directory via .gitkeep)
+uploads/*
+!uploads/.gitkeep
+
+# Testing and coverage
+*.test
+*.out
+coverage.txt

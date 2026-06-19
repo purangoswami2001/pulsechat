@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   THEME: CSS Custom Properties
+   ============================================ */
+
+/* Default theme (Indigo) */
+:root,
+.theme-default {
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --accent-dark: #4f46e5;
+  --accent-muted: rgba(99, 102, 241, 0.15);
+  --accent-gradient-from: #6366f1;
+  --accent-gradient-to: #4f46e5;
+  --surface: #ffffff;
+  --surface-raised: #f8fafc;
+  --surface-overlay: rgba(255, 255, 255, 0.8);
+}
+
+.dark {
+  --surface: #0f172a;
+  --surface-raised: #1e293b;
+  --surface-overlay: rgba(15, 23, 42, 0.8);
+}
+
+/* Ocean theme */
+.theme-ocean {
+  --accent: #06b6d4;
+  --accent-light: #22d3ee;
+  --accent-dark: #0891b2;
+  --accent-muted: rgba(6, 182, 212, 0.15);
+  --accent-gradient-from: #06b6d4;
+  --accent-gradient-to: #0e7490;
+}
+
+/* Sunset theme */
+.theme-sunset {
+  --accent: #f97316;
+  --accent-light: #fb923c;
+  --accent-dark: #ea580c;
+  --accent-muted: rgba(249, 115, 22, 0.15);
+  --accent-gradient-from: #f97316;
+  --accent-gradient-to: #dc2626;
+}
+
+/* Aurora theme */
+.theme-aurora {
+  --accent: #10b981;
+  --accent-light: #34d399;
+  --accent-dark: #059669;
+  --accent-muted: rgba(16, 185, 129, 0.15);
+  --accent-gradient-from: #10b981;
+  --accent-gradient-to: #0d9488;
+}
+
+/* Midnight theme */
+.theme-midnight {
+  --accent: #8b5cf6;
+  --accent-light: #a78bfa;
+  --accent-dark: #7c3aed;
+  --accent-muted: rgba(139, 92, 246, 0.15);
+  --accent-gradient-from: #8b5cf6;
+  --accent-gradient-to: #6d28d9;
+}
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* ============================================
+   SCROLLBAR — adapts to dark/light mode
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.4);
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+@layer utilities {
+  /* Glassmorphism panels */
+  .glass {
+    @apply backdrop-blur-xl bg-white/70 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-700/50;
+  }
+
+  .glass-subtle {
+    @apply backdrop-blur-md bg-white/40 dark:bg-slate-900/30 border border-slate-200/30 dark:border-slate-800/30;
+  }
+
+  /* Accent-colored utilities using CSS vars */
+  .bg-accent {
+    background-color: var(--accent);
+  }
+
+  .bg-accent-gradient {
+    background: linear-gradient(135deg, var(--accent-gradient-from), var(--accent-gradient-to));
+  }
+
+  .bg-accent-muted {
+    background-color: var(--accent-muted);
+  }
+
+  .text-accent {
+    color: var(--accent);
+  }
+
+  .text-accent-light {
+    color: var(--accent-light);
+  }
+
+  .border-accent {
+    border-color: var(--accent);
+  }
+
+  .border-accent-muted {
+    border-color: var(--accent-muted);
+  }
+
+  .ring-accent {
+    --tw-ring-color: var(--accent);
+  }
+
+  .shadow-accent {
+    box-shadow: 0 4px 14px -3px var(--accent-muted);
+  }
+
+  /* Typing dot animation stagger */
+  .typing-dot-1 { animation-delay: 0s; }
+  .typing-dot-2 { animation-delay: 0.2s; }
+  .typing-dot-3 { animation-delay: 0.4s; }
+}
+
+/* Prevent transition animations during initial load/refresh */
+.preload,
+.preload * {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -ms-transition: none !important;
+  -o-transition: none !important;
+  transition: none !important;
+}
+
