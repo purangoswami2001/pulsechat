@@ -13,7 +13,6 @@ var (
 	ErrExpiredToken = errors.New("token has expired")
 )
 
-// Claims defines custom JWT claim properties.
 type Claims struct {
 	UserID   string `json:"user_id"`
 	Username string `json:"username"`
@@ -21,7 +20,6 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// GenerateToken signs a new JWT token for a given user profile.
 func GenerateToken(userID, username, email, secret string, duration time.Duration) (string, error) {
 	now := time.Now()
 	claims := Claims{
@@ -46,13 +44,11 @@ func GenerateToken(userID, username, email, secret string, duration time.Duratio
 	return tokenStr, nil
 }
 
-// ValidateToken parses and verifies a signed token string.
 func ValidateToken(tokenStr, secret string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(
 		tokenStr,
 		&Claims{},
 		func(t *jwt.Token) (interface{}, error) {
-			// Validate signing method
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}

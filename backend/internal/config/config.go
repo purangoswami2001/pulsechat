@@ -10,29 +10,29 @@ import (
 	"time"
 )
 
-// Config holds all server configurations.
 type Config struct {
 	Port               string
 	Env                string
+	DBDriver           string // "postgres", "mysql"
 	DBDSN              string
+	AutoMigrate        bool
 	RedisURL           string
 	JWTSecret          string
 	JWTExpirationHours time.Duration
 	PubSubDriver       string // "memory" or "redis"
 }
 
-// Load reads config from the environment.
-// It optionally loads from a local `.env` file if it exists.
 func Load() (*Config, error) {
-	// Try loading from .env if present
 	if err := loadDotEnv(".env"); err != nil {
-		// Log warning, not an error since variables might be injected via environment/docker
 		slog.Info("No .env file loaded or error reading .env file", "error", err)
 	}
 
 	port := getEnv("PORT", "8080")
 	env := getEnv("ENV", "development")
+	dbDriver := getEnv("DB_DRIVER", "postgres")
 	dbDSN := getEnv("DB_DSN", "postgres://postgres:postgres@localhost:5432/pulsechat?sslmode=disable")
+	autoMigrateStr := getEnv("AUTO_MIGRATE", "false")
+	autoMigrate := autoMigrateStr == "true"
 	redisURL := getEnv("REDIS_URL", "redis://localhost:6379/0")
 	jwtSecret := getEnv("JWT_SECRET", "super_secret_jwt_key_should_be_long_and_random")
 
@@ -50,7 +50,9 @@ func Load() (*Config, error) {
 	return &Config{
 		Port:               port,
 		Env:                env,
+		DBDriver:           dbDriver,
 		DBDSN:              dbDSN,
+		AutoMigrate:        autoMigrate,
 		RedisURL:           redisURL,
 		JWTSecret:          jwtSecret,
 		JWTExpirationHours: time.Duration(jwtExpHours) * time.Hour,
@@ -58,7 +60,6 @@ func Load() (*Config, error) {
 	}, nil
 }
 
-// getEnv gets an environment variable or falls back to a default value.
 func getEnv(key, defaultValue string) string {
 	if val, ok := os.LookupEnv(key); ok {
 		return val
@@ -66,12 +67,11 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// loadDotEnv parses a basic .env file and sets environment variables.
 func loadDotEnv(filepath string) error {
 	file, err := os.Open(filepath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil // ignore if file doesn't exist
+			return nil
 		}
 		return err
 	}
@@ -80,7 +80,6 @@ func loadDotEnv(filepath string) error {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		// Skip empty lines or comments
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
@@ -93,7 +92,6 @@ func loadDotEnv(filepath string) error {
 		key := strings.TrimSpace(parts[0])
 		val := strings.TrimSpace(parts[1])
 
-		// Strip quotes if present
 		if (strings.HasPrefix(val, "\"") && strings.HasSuffix(val, "\"")) ||
 			(strings.HasPrefix(val, "'") && strings.HasSuffix(val, "'")) {
 			if len(val) >= 2 {
@@ -101,7 +99,6 @@ func loadDotEnv(filepath string) error {
 			}
 		}
 
-		// Only set if not already set by system environment
 		if _, ok := os.LookupEnv(key); !ok {
 			if err := os.Setenv(key, val); err != nil {
 				return fmt.Errorf("failed to set env var %s: %w", key, err)

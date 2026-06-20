@@ -1,70 +1,79 @@
 package main
 
 import (
-	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
+	"strconv"
 
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/pulsechat/backend/internal/config"
+	"github.com/pulsechat/backend/internal/migrate"
 )
 
 func main() {
-	flag.Parse()
-	args := flag.Args()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("failed to load configuration: %v", err)
+	}
+
+	args := os.Args[1:]
 	if len(args) < 1 {
-		fmt.Println("Usage: go run cmd/migrate/main.go [up|down]")
+		printUsage()
 		os.Exit(1)
 	}
+
+	migrator := migrate.NewMigrator(cfg.DBDriver, cfg.DBDSN)
 
 	cmd := args[0]
-
-	// Get DSN from environment or fallback
-	dsn := os.Getenv("DB_DSN")
-	if dsn == "" {
-		dsn = "postgres://postgres:postgres@localhost:5432/pulsechat?sslmode=disable"
-	}
-
-	// Migrations are stored in internal/db/migrations
-	migrationsPath := filepath.Join("internal", "db", "migrations")
-	if _, err := os.Stat(migrationsPath); os.IsNotExist(err) {
-		// Fallback if run from parent directory
-		migrationsPath = filepath.Join("backend", "internal", "db", "migrations")
-	}
-
-	m, err := migrate.New("file://"+migrationsPath, dsn)
-	if err != nil {
-		log.Fatalf("Failed to initialize migration instance: %v", err)
-	}
-	defer m.Close()
-
 	switch cmd {
 	case "up":
-		fmt.Println("Running database migrations (up)...")
-		if err := m.Up(); err != nil {
-			if errors.Is(err, migrate.ErrNoChange) {
-				fmt.Println("Database schema is already up to date.")
-				return
-			}
-			log.Fatalf("Failed to apply migrations: %v", err)
+		if err := migrator.Up(); err != nil {
+			log.Fatalf("Failed to run up migrations: %v", err)
 		}
-		fmt.Println("Migrations applied successfully!")
 	case "down":
-		fmt.Println("Running database migrations (down)...")
-		if err := m.Down(); err != nil {
-			if errors.Is(err, migrate.ErrNoChange) {
-				fmt.Println("No migration change detected.")
-				return
-			}
-			log.Fatalf("Failed to rollback migrations: %v", err)
+		if err := migrator.Down(); err != nil {
+			log.Fatalf("Failed to run down migrations: %v", err)
 		}
-		fmt.Println("Migrations rolled back successfully!")
+	case "steps":
+		if len(args) < 2 {
+			log.Fatalf("steps requires an integer argument (positive or negative)")
+		}
+		steps, err := strconv.Atoi(args[1])
+		if err != nil {
+			log.Fatalf("invalid steps argument: %v", err)
+		}
+		if err := migrator.Steps(steps); err != nil {
+			log.Fatalf("Failed to run steps: %v", err)
+		}
+	case "version":
+		v, dirty, err := migrator.Version()
+		if err != nil {
+			log.Fatalf("Failed to get version: %v", err)
+		}
+		fmt.Printf("Version: %d (dirty: %t)\n", v, dirty)
+	case "force":
+		if len(args) < 2 {
+			log.Fatalf("force requires a version integer argument")
+		}
+		v, err := strconv.Atoi(args[1])
+		if err != nil {
+			log.Fatalf("invalid version argument: %v", err)
+		}
+		if err := migrator.Force(v); err != nil {
+			log.Fatalf("Failed to force version: %v", err)
+		}
 	default:
-		fmt.Printf("Unknown command %q. Use 'up' or 'down'.\n", cmd)
+		printUsage()
 		os.Exit(1)
 	}
+}
+
+func printUsage() {
+	fmt.Println("Usage: go run ./cmd/migrate <command> [args]")
+	fmt.Println("Commands:")
+	fmt.Println("  up          Apply all migrations")
+	fmt.Println("  down        Rollback all migrations")
+	fmt.Println("  steps <N>   Run N migration steps (positive to apply, negative to rollback)")
+	fmt.Println("  version     Print current migration version")
+	fmt.Println("  force <V>   Force migration version V (useful if dirty state needs correction)")
 }

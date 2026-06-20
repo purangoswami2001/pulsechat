@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Database Service
+  # PostgreSQL Service
   postgres:
     image: postgres:15-alpine
     container_name: pulsechat-postgres
@@ -16,6 +16,26 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d pulsechat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # MySQL Service
+  mysql:
+    image: mysql:8
+    container_name: pulsechat-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: pulsechat
+      MYSQL_USER: postgres
+      MYSQL_PASSWORD: postgres
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -47,7 +67,9 @@ services:
     environment:
       PORT: "8080"
       ENV: "production"
-      DB_DSN: "postgres://postgres:postgres@postgres:5432/pulsechat?sslmode=disable"
+      DB_DRIVER: "postgres" # Switch to "mysql" to use MySQL driver
+      DB_DSN: "postgres://postgres:postgres@postgres:5432/pulsechat?sslmode=disable" # For MySQL use: "postgres:postgres@tcp(mysql:3306)/pulsechat?parseTime=true"
+      AUTO_MIGRATE: "true"
       REDIS_URL: "redis://redis:6379/0"
       PUBSUB_DRIVER: "redis"
       JWT_SECRET: "super_secret_jwt_key_should_be_long_and_random"
@@ -72,6 +94,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  mysql_data:
     driver: local
   redis_data:
     driver: local
